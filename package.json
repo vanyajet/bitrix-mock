@@ -1,0 +1,52 @@
+{
+  "name": "crm-analytics-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Demo CRM analytics dashboard: Bitrix24 sync -> PostgreSQL -> SQL aggregates -> React dashboard",
+  "type": "module",
+  "workspaces": [
+    "web"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:web": "npm run dev -w web",
+    "build": "npm run build:server && npm run build:web",
+    "build:server": "tsc -p tsconfig.build.json",
+    "build:web": "npm run build -w web",
+    "start": "node dist/index.js",
+    "migrate": "tsx src/db/migrate-cli.ts",
+    "typecheck": "tsc --noEmit && npm run typecheck -w web",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run lint && npm test"
+  },
+  "dependencies": {
+    "@faker-js/faker": "10.6.0",
+    "@fastify/helmet": "^13.2.0",
+    "@fastify/rate-limit": "^11.2.1",
+    "@fastify/static": "^10.1.7",
+    "fastify": "^5.12.7",
+    "node-cron": "^4.6.0",
+    "pg": "^8.23.1",
+    "pino": "^10.4.0",
+    "qs": "^6.16.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.19.2",
+    "@types/pg": "^8.23.1",
+    "@types/qs": "^6.15.1",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "pino-pretty": "^13.2.0",
+    "tsx": "^4.23.15",
+    "typescript": "~5.9",
+    "typescript-eslint": "^8.72.0",
+    "vitest": "^5.0.5"
+  }
+}

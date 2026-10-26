@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: crm
+      POSTGRES_DB: crm
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://crm:crm@db:5432/crm
+      BITRIX_MODE: ${BITRIX_MODE:-mock}
+      BITRIX_WEBHOOK_URL: ${BITRIX_WEBHOOK_URL:-}
+      DASHBOARD_TOKEN: ${DASHBOARD_TOKEN:-demo-dashboard-token}
+      SYNC_INTERVAL_MIN: ${SYNC_INTERVAL_MIN:-5}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    stop_grace_period: 30s
+
+volumes:
+  pgdata:
