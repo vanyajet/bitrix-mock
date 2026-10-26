@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { SOURCES, VERTICALS, type Source, type Vertical } from '../config/domain.js';
 import { expectedLeads, MODELS, ORIGIN_DAY } from './model.js';
 import { hashSeed, Rng } from './random.js';
-import { DAY, dayNoFromIso, dayNoOf, dayStartMs, isoDateOf } from './time.js';
+import { HOUR, dayNoFromIso, dayNoOf, dayStartMs, isoDateOf } from './time.js';
 
 export interface AdSpendRow {
   date: string;
@@ -30,12 +30,15 @@ const CAMPAIGN_PREFIX: Partial<Record<Source, string>> = {
 
 const MAX_RANGE_DAYS = 92;
 
-/** Расходы за день. За сегодня - пропорционально прошедшей части дня, как в реальном кабинете. */
+/**
+ * Расходы за день. За сегодня - по завершённым часам, как статистика кабинета, которая обновляется
+ * с задержкой: внутри часа повторный запрос даёт те же цифры, и повторный синк ничего не переписывает.
+ */
 export function adSpendForDay(vertical: Vertical, dayNo: number, seed: number, now: number): AdSpendRow[] {
   const today = dayNoOf(now);
   if (dayNo < ORIGIN_DAY || dayNo > today) return [];
   const model = MODELS[vertical];
-  const fraction = dayNo === today ? Math.min(1, (now - dayStartMs(dayNo)) / DAY) : 1;
+  const fraction = dayNo === today ? Math.floor((now - dayStartMs(dayNo)) / HOUR) / 24 : 1;
   const leadsTotal = expectedLeads(model, dayNo);
   const rows: AdSpendRow[] = [];
 

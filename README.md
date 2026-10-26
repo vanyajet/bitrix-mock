@@ -39,6 +39,7 @@ docker compose up --build
 4. первый синк, дальше по расписанию каждые `SYNC_INTERVAL_MIN` минут.
 
 Повторный `docker compose up` данные не дублирует: синк инкрементальный, upsert идемпотентный.
+Порты: приложение `3000` (`APP_PORT`), Postgres публикуется только на `127.0.0.1:5433` (`DB_PORT`) - для тестов и локальной разработки.
 
 ## Архитектура
 
@@ -144,7 +145,7 @@ ID выдаются по порядку создания, как автоинк�
 
 **Расходы на рекламу** в Bitrix24 не хранятся - их берут из рекламных кабинетов.
 Здесь это `GET /mock/ads/spend?from=&to=&vertical=` (Bearer-токен, окно до 92 дней): дневные расходы, показы и клики по каналам и кампаниям,
-кампания привязана к сегменту. **В продакшене это Google Ads API и Yandex Direct Reports API**:
+кампания привязана к сегменту. Сегодняшний день отдаётся по завершённым часам, как в реальных кабинетах со статистикой с задержкой. **В продакшене это Google Ads API и Yandex Direct Reports API**:
 адаптеры приводят ответ к тем же строкам `ad_spend`, сегмент определяется по названию кампании или UTM.
 
 ## Переключение на реальный Bitrix24
@@ -315,8 +316,12 @@ curl -X POST -H 'X-Dashboard-Token: demo-dashboard-token' 'http://localhost:3000
    Введите `DATABASE_URL` из Neon. `DASHBOARD_TOKEN`, `MOCK_WEBHOOK_TOKEN` и `ADS_API_TOKEN` сгенерируются сами.
    Пароль от дашборда - значение `DASHBOARD_TOKEN` в **Environment**.
    Без Blueprint: **New → Web Service → Docker**, те же переменные, health check path `/api/health`.
-4. После деплоя откройте `https://<service>.onrender.com`. Миграции, сидирование и первый синк выполнятся сами;
-   данные появятся примерно через минуту (бесплатный инстанс медленнее ноутбука).
+4. После деплоя откройте `https://<service>.onrender.com`. Миграции, сидирование и первый синк выполнятся сами.
+
+**Чего ждать на бесплатном инстансе (0,1 CPU, 512 МБ).** Замер образа с теми же лимитами (`docker run --cpus 0.1 --memory 512m`):
+генерация mock-портала ~40 с (не блокирует сервер), первые лиды в базе через ~1 минуту, полный первый синк ~6 минут,
+пик памяти ~150 МБ. Пока идёт первый синк, ответы API замедляются до нескольких секунд: процесс упирается в квоту CPU.
+Дальше синки инкрементальные и занимают секунды. Для показа без ожидания подойдёт инстанс Starter (0,5 CPU).
 
 `PORT` Render задаёт сам - приложение его читает. Фронт собирается в том же Docker-образе и раздаётся Fastify, отдельный хостинг не нужен.
 
@@ -360,11 +365,11 @@ curl -X POST -H 'X-Dashboard-Token: demo-dashboard-token' 'http://localhost:3000
 ```bash
 npm install
 cp .env.example .env
-docker compose up -d db          # Postgres для разработки и тестов
+docker compose up -d db          # Postgres для разработки и тестов (на хосте 127.0.0.1:5433)
 npm run dev                      # бэкенд на :3000 (tsx watch)
 npm run dev:web                  # фронт на :5173, proxy /api подставляет токен из .env
 
-npm test                         # vitest (нужен Postgres: создаёт базу crm_test, TEST_DATABASE_URL переопределяет)
+npm test                         # vitest; нужен Postgres из compose - база crm_test создаётся сама (переопределить: TEST_DATABASE_URL)
 npm run typecheck                # tsc --noEmit для бэкенда и фронта
 npm run lint                     # eslint
 npm run build                    # dist/ + web/dist/

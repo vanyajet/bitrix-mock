@@ -52,10 +52,21 @@ function PlanFact({ rows }: { rows: PlanRow[] }) {
   const theme = useChartTheme();
   const factColor = theme.series[0]!;
   const planColor = theme.ink2;
+  const hasPlan = rows.some((r) => r.plan > 0);
   return (
     <Card>
-      <CardHeader title="План / факт" subtitle="Текущий месяц - факт на сегодня против плана на весь месяц"
-        right={<Legend items={[{ key: 'fact', label: 'Факт', color: factColor }, { key: 'plan', label: 'План', color: planColor, dashed: true }]} />} />
+      <CardHeader
+        title="План / факт"
+        subtitle={hasPlan ? 'Текущий месяц - факт на сегодня против плана на весь месяц' : 'План не задан: заполните таблицу plans (см. README)'}
+        right={
+          <Legend
+            items={[
+              { key: 'fact', label: 'Факт', color: factColor },
+              ...(hasPlan ? [{ key: 'plan', label: 'План', color: planColor, dashed: true }] : []),
+            ]}
+          />
+        }
+      />
       <div className="px-3 pt-3 pb-4">
         <ResponsiveContainer width="100%" height={280}>
           <ComposedChart data={rows} margin={CHART_MARGIN}>
@@ -81,8 +92,8 @@ function PlanFact({ rows }: { rows: PlanRow[] }) {
               }}
             />
             <Bar isAnimationActive={false} dataKey="fact" fill={factColor} radius={[4, 4, 0, 0]} maxBarSize={32} />
-            <Line isAnimationActive={false} dataKey="plan" stroke={planColor} strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3, fill: planColor, strokeWidth: 0 }}
-              activeDot={{ r: 5, stroke: theme.surface, strokeWidth: 2 }} />
+            {hasPlan && <Line isAnimationActive={false} dataKey="plan" stroke={planColor} strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3, fill: planColor, strokeWidth: 0 }}
+              activeDot={{ r: 5, stroke: theme.surface, strokeWidth: 2 }} />}
           </ComposedChart>
         </ResponsiveContainer>
       </div>

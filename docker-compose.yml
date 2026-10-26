@@ -5,8 +5,9 @@ services:
       POSTGRES_USER: crm
       POSTGRES_PASSWORD: crm
       POSTGRES_DB: crm
+    # наружу только для локальных тестов и npm run dev; 5433, чтобы не конфликтовать с локальным Postgres
     ports:
-      - "${DB_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:

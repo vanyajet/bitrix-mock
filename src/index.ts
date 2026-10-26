@@ -36,10 +36,10 @@ await app.listen({ port: env.PORT, host: env.HOST });
 logger.info({ mode: env.BITRIX_MODE, port: env.PORT }, 'server started');
 
 if (mockStore) {
-  // Генерация истории портала после listen: health-check отвечает сразу, даже на медленном CPU.
+  // Генерация истории портала после listen и без блокировки event loop: health-check отвечает сразу.
   const started = Date.now();
-  const stats = mockStore.stats();
-  logger.info({ ...stats, ms: Date.now() - started }, 'mock Bitrix24 portal generated');
+  await mockStore.warmUp();
+  logger.info({ ...mockStore.stats(), ms: Date.now() - started }, 'mock Bitrix24 portal generated');
 }
 
 let scheduler: ScheduledTask | null = null;

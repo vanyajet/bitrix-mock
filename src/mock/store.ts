@@ -92,6 +92,11 @@ export interface MockStoreOptions {
   seed: number;
   /** Текущее время в мс; в тестах подменяется, чтобы "проматывать" жизнь портала. */
   clock?: () => number;
+  /**
+   * Шаг среза, мс. Срез (и отсортированные выборки list-методов) переиспользуется в пределах шага:
+   * на слабом CPU пачка batch-запросов полного синка не пересобирает 20 тыс. записей на каждый запрос.
+   */
+  snapshotStepMs?: number;
 }
 
 /** Текущее состояние: последнее событие, случившееся не позже now (события отсортированы по времени). */
@@ -133,10 +138,24 @@ export class MockStore {
   private pendingDealEvents: HistoryRef[] = [];
   private readonly ids = { lead: 1, deal: 1, leadHistory: 1, dealHistory: 1 };
   private snapshotCache: Snapshot | null = null;
+  private readonly snapshotStepMs: number;
 
-  constructor({ seed, clock = Date.now }: MockStoreOptions) {
+  constructor({ seed, clock = Date.now, snapshotStepMs = 15_000 }: MockStoreOptions) {
     this.seed = seed;
     this.clock = clock;
+    this.snapshotStepMs = snapshotStepMs;
+  }
+
+  /**
+   * Генерация истории без блокировки event loop: на 0.1 CPU (бесплатный Render) она занимает десятки
+   * секунд, и всё это время health-check и API должны отвечать. Между днями отдаём управление циклу событий.
+   */
+  async warmUp(): Promise<void> {
+    const target = dayNoOf(this.clock());
+    while (this.generatedThrough < target) {
+      this.generateNextDay();
+      if (this.generatedThrough % 5 === 0) await new Promise((resolve) => setImmediate(resolve));
+    }
   }
 
   now(): number {
@@ -189,9 +208,9 @@ export class MockStore {
     this.snapshotCache = null;
   }
 
-  /** Срез портала на текущую секунду; строки собираются лениво и кэшируются на эту секунду. */
+  /** Срез портала на текущий момент (с шагом snapshotStepMs); строки собираются лениво и кэшируются на шаг. */
   snapshot(): Snapshot {
-    const now = Math.floor(this.clock() / 1000) * 1000;
+    const now = Math.floor(this.clock() / this.snapshotStepMs) * this.snapshotStepMs;
     this.ensureGenerated(now);
     if (this.snapshotCache?.now === now) return this.snapshotCache;
 

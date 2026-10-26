@@ -16,20 +16,49 @@ export interface PoolOptions {
   logger: Logger;
 }
 
+/**
+ * Клиент, который сразу после подключения выставляет часовой пояс сессии: date_trunc по timestamptz
+ * (недели/месяцы) и границы периодов считаются в часовом поясе бизнеса. Пул получает клиента только
+ * после set_config, поэтому ни один запрос не выполнится в UTC. Работает на любом Postgres (без
+ * стартового параметра options), но требует прямого соединения - как и session-level advisory lock.
+ */
+type ConnectCallback = ((err: Error) => void) | ((err: null, client: pg.Client) => void);
+
+function clientWithTimeZone(timeZone: string, onError: (err: Error) => void): typeof pg.Client {
+  return class TimeZoneClient extends pg.Client {
+    constructor(config?: string | pg.ClientConfig) {
+      super(config);
+      // Обрыв соединения у выданного из пула клиента без слушателя 'error' роняет процесс.
+      // Ошибка активного запроса всё равно придёт в его промис; здесь - только страховка.
+      this.on('error', (err) => onError(err));
+    }
+
+    override connect(): Promise<pg.Client>;
+    override connect(callback: ConnectCallback): void;
+    override connect(callback?: ConnectCallback): Promise<pg.Client> | void {
+      const ready = super
+        .connect()
+        .then(() => super.query("SELECT set_config('TimeZone', $1, false)", [timeZone]))
+        .then((): pg.Client => this);
+      if (!callback) return ready;
+      const cb = callback as (err: Error | null, client?: pg.Client) => void;
+      ready.then(
+        (client) => cb(null, client),
+        (err: Error) => cb(err),
+      );
+    }
+  };
+}
+
 export function createPool({ connectionString, max, timeZone, logger }: PoolOptions): pg.Pool {
   const pool = new pg.Pool({
     connectionString,
     max,
     idleTimeoutMillis: 30_000,
-    connectionTimeoutMillis: 10_000,
+    // с запасом: на слабом CPU (бесплатные инстансы) рукопожатие TLS и event loop бывают медленными
+    connectionTimeoutMillis: 30_000,
     application_name: 'crm-analytics',
-  });
-  // date_trunc по timestamptz (недели/месяцы) и границы дат считаются в часовом поясе бизнеса.
-  // Запрос ставится в очередь клиента раньше любого пользовательского, поэтому применяется до него.
-  pool.on('connect', (client) => {
-    client.query("SELECT set_config('TimeZone', $1, false)", [timeZone]).catch((err: unknown) => {
-      logger.error({ err }, 'failed to set session time zone');
-    });
+    Client: clientWithTimeZone(timeZone, (err) => logger.warn({ err: err.message }, 'postgres client error')),
   });
   pool.on('error', (err) => logger.error({ err }, 'idle postgres client error'));
   return pool;

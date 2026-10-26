@@ -134,7 +134,7 @@ export function SyncPanel() {
                   ))}
                 </tbody>
               </table>
-              <p className="mt-2 text-xs text-muted">«Записано» - только реально изменившиеся строки: повторный синк без изменений даёт 0.</p>
+              <p className="mt-2 text-xs text-muted">«Записано» - только реально изменившиеся строки: если в портале ничего не поменялось, повторный синк даёт 0.</p>
             </div>
             <div>
               <h3 className="mb-2 text-xs font-medium text-muted uppercase">Предыдущие прогоны</h3>
