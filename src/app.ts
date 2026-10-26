@@ -1,9 +1,12 @@
 import helmet from '@fastify/helmet';
+import rateLimit from '@fastify/rate-limit';
 import Fastify, { LogController, type FastifyInstance } from 'fastify';
 import qs from 'qs';
 import { registerDashboardAuth } from './api/auth.js';
 import { registerErrorHandler } from './api/errors.js';
+import { analyticsRoutes } from './api/analytics-routes.js';
 import { healthRoutes } from './api/health.js';
+import { syncRoutes } from './api/sync-routes.js';
 import { adsEnabled } from './config/env.js';
 import type { AppContext } from './context.js';
 import { mockAdsRoutes } from './mock/ads.js';
@@ -52,7 +55,16 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
     await app.register(mockAdsRoutes, { prefix: '/mock/ads', token: env.ADS_API_TOKEN, seed: env.MOCK_SEED, clock });
   }
 
-  await app.register(healthRoutes, { prefix: '/api', ctx });
+  await app.register(
+    async (api) => {
+      // Лимит только для /api: mock-эндпоинты имеют свой лимит "как у Bitrix", статика - без лимита.
+      await api.register(rateLimit, { max: 300, timeWindow: '1 minute' });
+      await api.register(healthRoutes, { ctx });
+      await api.register(analyticsRoutes, { ctx });
+      await api.register(syncRoutes, { ctx });
+    },
+    { prefix: '/api' },
+  );
   await registerStatic(app);
   return app;
 }

@@ -101,6 +101,7 @@ export class SyncAlreadyRunningError extends Error {
 
 export class SyncService {
   private current: Promise<SyncResult> | null = null;
+  private runId: string | null = null;
   private abortController: AbortController | null = null;
   private readonly now: () => Date;
 
@@ -112,12 +113,18 @@ export class SyncService {
     return this.current !== null;
   }
 
+  get currentRunId(): string | null {
+    return this.runId;
+  }
+
   /** Запуск прогона. Если прогон уже идёт в этом процессе - SyncAlreadyRunningError. */
   run(trigger: SyncTrigger, opts: { full?: boolean } = {}): Promise<SyncResult> {
     if (this.current) return Promise.reject(new SyncAlreadyRunningError());
     this.abortController = new AbortController();
-    this.current = this.execute(trigger, opts.full ?? false, this.abortController.signal).finally(() => {
+    this.runId = randomUUID();
+    this.current = this.execute(this.runId, trigger, opts.full ?? false, this.abortController.signal).finally(() => {
       this.current = null;
+      this.runId = null;
       this.abortController = null;
     });
     return this.current;
@@ -129,9 +136,8 @@ export class SyncService {
     await this.current?.catch(() => undefined);
   }
 
-  private async execute(trigger: SyncTrigger, full: boolean, signal: AbortSignal): Promise<SyncResult> {
+  private async execute(runId: string, trigger: SyncTrigger, full: boolean, signal: AbortSignal): Promise<SyncResult> {
     const { pool, logger } = this.deps;
-    const runId = randomUUID();
     const started = Date.now();
     const lockClient = await pool.connect();
     const entities: EntityResult[] = [];

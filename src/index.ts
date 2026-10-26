@@ -1,8 +1,10 @@
 import type { ScheduledTask } from 'node-cron';
+import { ResponseCache } from './api/cache.js';
 import { buildApp } from './app.js';
 import { loadDotEnv, loadEnv } from './config/env.js';
 import { runMigrations } from './db/migrate.js';
 import { createPool, waitForDb } from './db/pool.js';
+import { refreshMaterializedViews } from './db/refresh.js';
 import { createLogger } from './logger.js';
 import { seedPlans } from './mock/plans.js';
 import { MockStore } from './mock/store.js';
@@ -24,8 +26,12 @@ if (mockStore) {
   if (inserted > 0) logger.info({ inserted }, 'revenue plans seeded');
 }
 
-const sync = createSyncService(env, pool, logger);
-const app = await buildApp({ env, pool, logger, mockStore, sync });
+const cache = new ResponseCache(env.CACHE_TTL_SEC * 1000);
+const sync = createSyncService(env, pool, logger, async () => {
+  await refreshMaterializedViews(pool, logger);
+  cache.clear();
+});
+const app = await buildApp({ env, pool, logger, cache, mockStore, sync });
 await app.listen({ port: env.PORT, host: env.HOST });
 logger.info({ mode: env.BITRIX_MODE, port: env.PORT }, 'server started');
 

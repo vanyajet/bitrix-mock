@@ -1,23 +1,24 @@
 // План выручки - бизнес-настройка, в Bitrix24 его нет. В демо он рассчитывается из той же модели,
-// что и данные (ожидаемая выручка +10% "амбициозности"), и сидируется идемпотентно.
+// что и данные (ожидаемая выручка с учётом цикла сделки +5% "амбициозности"), и сидируется идемпотентно.
 
 import { VERTICALS } from '../config/domain.js';
 import type { Pool } from '../db/pool.js';
 import { expectedLeads, managerWeights, MODELS, ORIGIN_DAY, winRate, type SegmentDef, type VerticalModel } from './model.js';
 import { dayNoFromIso, dayStartMs, localParts } from './time.js';
 
-const PLAN_UPLIFT = 1.1;
+const PLAN_UPLIFT = 1.05;
 // E[logNormal(1, 0.35)] - разброс чека лида относительно среднего
 const CHECK_SPREAD = Math.exp(0.35 ** 2 / 2);
 
-/** Ожидаемая выручка с одного лида сегмента (вероятность выигрыша x средний чек). */
+/** Ожидаемая выручка с одного лида сегмента (вероятность выигрыша x средний чек). Лимит конверсии лида 0.93 - как в генераторе. */
 function revenuePerLead(model: VerticalModel, segment: SegmentDef): number {
   const managers = managerWeights(model, segment);
   const managerTotal = managers.reduce((s, [, w]) => s + w, 0);
   let value = 0;
   for (const [manager, mw] of managers) {
     for (const source of Object.values(model.sources)) {
-      value += (mw / managerTotal) * source.share * winRate(model, manager, source, segment) * segment.avgCheck * manager.checkFactor;
+      const pWin = Math.min(0.93 * model.pMeeting * model.pWinAfterMeeting, winRate(model, manager, source, segment));
+      value += (mw / managerTotal) * source.share * pWin * segment.avgCheck * manager.checkFactor;
     }
   }
   return value * CHECK_SPREAD;
@@ -45,7 +46,8 @@ export function buildPlans(now: number, monthsAhead = 2): PlanRow[] {
         const first = dayNoFromIso(`${year}-${String(month).padStart(2, '0')}-01`);
         const days = localParts(dayStartMs(first)).daysInMonth;
         let leads = 0;
-        for (let d = first; d < first + days; d++) leads += expectedLeads(model, d);
+        // выручка месяца - это оплаты по лидам, пришедшим примерно на revenueLagDays раньше
+        for (let d = first; d < first + days; d++) leads += expectedLeads(model, Math.max(ORIGIN_DAY, d - model.revenueLagDays));
         const step = vertical === 'dental' ? 10_000 : 100_000;
         rows.push({
           vertical,

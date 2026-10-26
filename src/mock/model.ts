@@ -63,6 +63,8 @@ export interface VerticalModel {
   pMeeting: number;
   pWinAfterMeeting: number;
   maxWinRate: number;
+  /** Типичный лаг от заявки до оплаты, дней: план месяца опирается на лиды, пришедшие на столько раньше. */
+  revenueLagDays: number;
 }
 
 export const SOURCE_LABELS: Record<Source, string> = {
@@ -100,18 +102,19 @@ export const MODELS: Record<Vertical, VerticalModel> = {
       { id: 16, name: 'Павел', lastName: 'Волков', position: 'Хирург-имплантолог', conversion: 0.225, checkFactor: 1.25, responseMin: 120, affinity: { implant: 3, ortho: 0.5 } },
     ],
     sources: {
-      yandex_direct: { share: 0.3, quality: 1.0, cpl: 1_900, cpc: 48, ctr: 0.035 },
-      google_ads: { share: 0.14, quality: 0.95, cpl: 2_300, cpc: 55, ctr: 0.028 },
-      instagram: { share: 0.22, quality: 0.65, cpl: 950, cpc: 22, ctr: 0.009 },
-      seo: { share: 0.16, quality: 1.2, cpl: 650, cpc: 0, ctr: 0.04 },
+      yandex_direct: { share: 0.3, quality: 1.0, cpl: 3_400, cpc: 85, ctr: 0.035 },
+      google_ads: { share: 0.14, quality: 0.95, cpl: 4_100, cpc: 95, ctr: 0.028 },
+      instagram: { share: 0.22, quality: 0.65, cpl: 1_700, cpc: 38, ctr: 0.009 },
+      seo: { share: 0.16, quality: 1.2, cpl: 1_200, cpc: 0, ctr: 0.04 },
       referral: { share: 0.13, quality: 1.55, cpl: 0, cpc: 0, ctr: 0 },
-      cold_call: { share: 0.05, quality: 0.55, cpl: 1_400, cpc: 0, ctr: 0 },
+      cold_call: { share: 0.05, quality: 0.55, cpl: 2_500, cpc: 0, ctr: 0 },
     },
     noAnswerShare: 0.45,
     neverProcessed: 0.012,
     pMeeting: 0.82,
     pWinAfterMeeting: 0.78,
     maxWinRate: 0.62,
+    revenueLagDays: 10,
   },
   metal: {
     vertical: 'metal',
@@ -124,10 +127,10 @@ export const MODELS: Record<Vertical, VerticalModel> = {
     hourly: [0.05, 0.02, 0.02, 0.02, 0.02, 0.05, 0.2, 0.6, 1.4, 2, 2.1, 2, 1.6, 1.8, 1.9, 1.8, 1.6, 1.2, 0.7, 0.5, 0.4, 0.3, 0.15, 0.08],
     schedule: { hours: { 1: [9, 18], 2: [9, 18], 3: [9, 18], 4: [9, 18], 5: [9, 18], 6: null, 7: null } },
     segments: [
-      { code: 'commercial', label: 'Коммерческие помещения', leadEnumId: '201', dealEnumId: '1201', share: 0.34, avgCheck: 1_600_000, convFactor: 1.0 },
-      { code: 'izhs', label: 'ИЖС', leadEnumId: '202', dealEnumId: '1202', share: 0.3, avgCheck: 700_000, convFactor: 1.1 },
-      { code: 'industrial', label: 'Промышленность', leadEnumId: '203', dealEnumId: '1203', share: 0.22, avgCheck: 3_900_000, convFactor: 0.8 },
-      { code: 'agro', label: 'Агро', leadEnumId: '204', dealEnumId: '1204', share: 0.14, avgCheck: 2_200_000, convFactor: 0.95 },
+      { code: 'commercial', label: 'Коммерческие помещения', leadEnumId: '201', dealEnumId: '1201', share: 0.34, avgCheck: 1_000_000, convFactor: 1.0 },
+      { code: 'izhs', label: 'ИЖС', leadEnumId: '202', dealEnumId: '1202', share: 0.3, avgCheck: 450_000, convFactor: 1.1 },
+      { code: 'industrial', label: 'Промышленность', leadEnumId: '203', dealEnumId: '1203', share: 0.22, avgCheck: 2_400_000, convFactor: 0.8 },
+      { code: 'agro', label: 'Агро', leadEnumId: '204', dealEnumId: '1204', share: 0.14, avgCheck: 1_400_000, convFactor: 0.95 },
     ],
     managers: [
       { id: 21, name: 'Андрей', lastName: 'Кузнецов', position: 'Ведущий менеджер', conversion: 0.21, checkFactor: 1.1, responseMin: 30, affinity: { commercial: 2, industrial: 2 } },
@@ -137,18 +140,19 @@ export const MODELS: Record<Vertical, VerticalModel> = {
       { id: 25, name: 'Максим', lastName: 'Фёдоров', position: 'Менеджер по продажам', conversion: 0.09, checkFactor: 0.95, responseMin: 180, affinity: { izhs: 2, agro: 2, commercial: 1 } },
     ],
     sources: {
-      yandex_direct: { share: 0.3, quality: 1.0, cpl: 5_200, cpc: 85, ctr: 0.025 },
-      google_ads: { share: 0.18, quality: 0.95, cpl: 6_100, cpc: 95, ctr: 0.022 },
-      instagram: { share: 0.06, quality: 0.65, cpl: 3_400, cpc: 40, ctr: 0.007 },
-      seo: { share: 0.2, quality: 1.2, cpl: 1_800, cpc: 0, ctr: 0.04 },
+      yandex_direct: { share: 0.3, quality: 1.0, cpl: 24_000, cpc: 210, ctr: 0.025 },
+      google_ads: { share: 0.18, quality: 0.95, cpl: 27_000, cpc: 240, ctr: 0.022 },
+      instagram: { share: 0.06, quality: 0.65, cpl: 12_000, cpc: 70, ctr: 0.007 },
+      seo: { share: 0.2, quality: 1.2, cpl: 8_000, cpc: 0, ctr: 0.04 },
       referral: { share: 0.1, quality: 1.55, cpl: 0, cpc: 0, ctr: 0 },
-      cold_call: { share: 0.16, quality: 0.55, cpl: 2_600, cpc: 0, ctr: 0 },
+      cold_call: { share: 0.16, quality: 0.55, cpl: 9_000, cpc: 0, ctr: 0 },
     },
     noAnswerShare: 0.35,
     neverProcessed: 0.008,
     pMeeting: 0.65,
     pWinAfterMeeting: 0.5,
     maxWinRate: 0.32,
+    revenueLagDays: 55,
   },
 };
 
