@@ -1,1 +1,74 @@
 @import 'tailwindcss';
+
+/* Токены: page plane / surface / ink - по референсной палитре dataviz; тёмная тема - отдельные шаги, не инверсия. */
+:root {
+  color-scheme: light;
+  --bg: #f4f4f1;
+  --surface: #fcfcfb;
+  --surface-2: #f1f0ec;
+  --line: rgba(11, 11, 11, 0.1);
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #7a7873;
+  --accent: #2a78d6;
+  --accent-soft: rgba(42, 120, 214, 0.12);
+  --good: #006300;
+  --bad: #c02f2f;
+  --warn: #9a6400;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-2: #242422;
+    --line: rgba(255, 255, 255, 0.1);
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --muted: #8f8d87;
+    --accent: #3987e5;
+    --accent-soft: rgba(57, 135, 229, 0.18);
+    --good: #2fbf2f;
+    --bad: #ef6b6b;
+    --warn: #e0a30b;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-muted: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-good: var(--good);
+  --color-bad: var(--bad);
+  --color-warn: var(--warn);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+html {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Recharts: убрать рамку фокуса у SVG-обёртки */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}

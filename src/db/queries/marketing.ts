@@ -58,12 +58,13 @@ export async function sourceBreakdown(pool: Pool, p: Period): Promise<{ sources:
             coalesce(r.leads, 0) AS leads, coalesce(r.deals, 0) AS deals, coalesce(r.won, 0) AS won,
             coalesce(r.revenue, 0) AS revenue, coalesce(r.spend, 0) AS spend,
             coalesce(r.clicks, 0) AS clicks, coalesce(r.impressions, 0) AS impressions,
-            round(r.spend / NULLIF(r.leads, 0), 2)                         AS cpl,
-            round(r.spend / NULLIF(r.clicks, 0), 2)                        AS cpc,
+            -- для бесплатных каналов (рекомендации) CPL/CAC не определены, а не равны нулю
+            round(NULLIF(r.spend, 0) / NULLIF(r.leads, 0), 2)              AS cpl,
+            round(NULLIF(r.spend, 0) / NULLIF(r.clicks, 0), 2)             AS cpc,
             round(100.0 * r.clicks / NULLIF(r.impressions, 0), 2)          AS "ctrPct",
             round(100.0 * r.deals / NULLIF(r.leads, 0), 1)                 AS "leadToDealPct",
             round(100.0 * r.won / NULLIF(r.leads, 0), 1)                   AS "leadToWonPct",
-            round(r.spend / NULLIF(r.won, 0), 2)                           AS cac,
+            round(NULLIF(r.spend, 0) / NULLIF(r.won, 0), 2)                AS cac,
             round(100.0 * (r.revenue - r.spend) / NULLIF(r.spend, 0), 1)   AS "romiPct",
             round(100.0 * r.leads / NULLIF(sum(r.leads) FILTER (WHERE r.is_total = 0) OVER (), 0), 1) AS "sharePct"
      FROM combined r

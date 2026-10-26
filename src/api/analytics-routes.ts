@@ -57,6 +57,9 @@ export async function analyticsRoutes(app: FastifyInstance, { ctx }: { ctx: AppC
           kpi('spend', 'Расходы на рекламу', c.spend, v.spend, 'money', { better: 'down' }),
           kpi('cpl', 'CPL', c.cpl, v.cpl, 'money', { better: 'down', hint: 'Стоимость лида: расходы / лиды' }),
           kpi('cac', 'CAC', c.cac, v.cac, 'money', { better: 'down', hint: 'Стоимость клиента: расходы / выигранные сделки с лидов периода' }),
+          kpi('revenueCohort', 'Выручка с лидов периода', c.revenueCohort, v.revenueCohort, 'money', {
+            hint: 'Выигранные сделки по лидам, созданным в периоде (база для ROMI)',
+          }),
           kpi('romi', 'ROMI', c.romiPct, v.romiPct, 'percent', { hint: '(выручка с лидов периода − расходы) / расходы' }),
         ],
         weekly,
