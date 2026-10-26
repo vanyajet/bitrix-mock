@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { z } from 'zod';
-import { VERTICALS, type Vertical } from './domain.js';
+import { STAGES, VERTICALS, type Vertical } from './domain.js';
 
 const bool = z
   .enum(['true', 'false', '1', '0', 'yes', 'no'])
@@ -20,16 +20,18 @@ const verticalMap = z.string().transform((value, ctx) => {
   return result;
 });
 
-const jsonRecord = z.string().transform((value, ctx) => {
-  try {
-    const parsed: unknown = JSON.parse(value);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, string>;
-  } catch {
-    // fallthrough
-  }
-  ctx.addIssue({ code: 'custom', message: 'expected JSON object' });
-  return z.NEVER;
-});
+/** '{"UC_CALLBACK":"IN_PROGRESS","C3:CONTRACT":"MEETING"}' - ручной маппинг статусов на канонические стадии. */
+const stageMap = z
+  .string()
+  .transform((value, ctx) => {
+    try {
+      return JSON.parse(value) as unknown;
+    } catch {
+      ctx.addIssue({ code: 'custom', message: 'expected JSON object' });
+      return z.NEVER;
+    }
+  })
+  .pipe(z.record(z.string(), z.enum(STAGES)));
 
 const EnvSchema = z
   .object({
@@ -57,7 +59,7 @@ const EnvSchema = z
     BITRIX_CATEGORY_VERTICALS: verticalMap.default({ '1': 'dental', '2': 'metal' }),
     BITRIX_DEPARTMENT_VERTICALS: verticalMap.default({ '10': 'dental', '20': 'metal' }),
     BITRIX_DEFAULT_VERTICAL: z.enum(VERTICALS).optional(),
-    BITRIX_STAGE_MAP: jsonRecord.optional(),
+    BITRIX_STAGE_MAP: stageMap.optional(),
 
     MOCK_WEBHOOK_TOKEN: z.string().min(6).default('mock-webhook-secret'),
     MOCK_SEED: z.coerce.number().int().default(20_241),
