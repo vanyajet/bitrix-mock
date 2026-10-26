@@ -1,0 +1,38 @@
+# VPS: приложение + Postgres за Nginx. Порт приложения слушает только localhost.
+# Запуск: APP_IMAGE=crm-analytics:<git-sha> docker compose -f deploy/docker-compose.prod.yml --env-file /etc/crm-analytics.env up -d
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: crm
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: crm
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm -d crm"]
+      interval: 5s
+      retries: 20
+
+  app:
+    image: ${APP_IMAGE:-crm-analytics:latest}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgres://crm:${POSTGRES_PASSWORD}@db:5432/crm
+      DASHBOARD_TOKEN: ${DASHBOARD_TOKEN:?set DASHBOARD_TOKEN}
+      BITRIX_MODE: ${BITRIX_MODE:-mock}
+      BITRIX_WEBHOOK_URL: ${BITRIX_WEBHOOK_URL:-}
+      SYNC_INTERVAL_MIN: ${SYNC_INTERVAL_MIN:-5}
+      MOCK_WEBHOOK_TOKEN: ${MOCK_WEBHOOK_TOKEN:-}
+    ports:
+      - "127.0.0.1:3000:3000"
+    stop_grace_period: 30s
+
+volumes:
+  pgdata:

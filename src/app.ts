@@ -40,6 +40,8 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
+        // HTTPS обеспечивает платформа (Render/Nginx); локальный docker compose работает по http
+        upgradeInsecureRequests: null,
       },
     },
   });

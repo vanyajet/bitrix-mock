@@ -21,7 +21,8 @@
     "typecheck": "tsc --noEmit && npm run typecheck -w web",
     "lint": "eslint .",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "check": "npm run typecheck && npm run lint && npm test",
+    "migrate:prod": "node dist/db/migrate-cli.js"
   },
   "dependencies": {
     "@faker-js/faker": "10.6.0",

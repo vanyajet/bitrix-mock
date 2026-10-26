@@ -1,0 +1,27 @@
+# systemd-юнит для запуска без Docker (Node 24 + собранный dist/), альтернатива docker compose.
+#   cp deploy/crm-analytics.service /etc/systemd/system/ && systemctl enable --now crm-analytics
+# Миграции применяются при старте (ExecStartPre - явно, до приёма трафика).
+[Unit]
+Description=CRM Analytics (Bitrix24 sync + dashboard)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=crm
+WorkingDirectory=/opt/crm-analytics
+EnvironmentFile=/etc/crm-analytics.env
+ExecStartPre=/usr/bin/node dist/db/migrate-cli.js
+ExecStart=/usr/bin/node --enable-source-maps dist/index.js
+Restart=on-failure
+RestartSec=5
+# SIGTERM -> приложение дописывает текущую пачку синка и закрывает соединения
+KillSignal=SIGTERM
+TimeoutStopSec=30
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

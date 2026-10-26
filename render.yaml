@@ -1,0 +1,28 @@
+# Render Blueprint: один Docker web-сервис. База - внешний Postgres (Neon), строка подключения вводится при создании.
+services:
+  - type: web
+    name: crm-analytics-demo
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false # прямое (не -pooler) подключение Neon, см. README
+      - key: DASHBOARD_TOKEN
+        generateValue: true
+      - key: BITRIX_MODE
+        value: mock
+      - key: BITRIX_WEBHOOK_URL
+        sync: false # нужен только для BITRIX_MODE=live
+      - key: SYNC_INTERVAL_MIN
+        value: "5"
+      - key: NODE_ENV
+        value: production
+      # mock-эндпоинты публичны: случайные токены, чтобы посторонний не выбирал лимит 2 запроса/сек
+      - key: MOCK_WEBHOOK_TOKEN
+        generateValue: true
+      - key: ADS_API_TOKEN
+        generateValue: true

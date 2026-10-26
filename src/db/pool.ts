@@ -23,8 +23,13 @@ export function createPool({ connectionString, max, timeZone, logger }: PoolOpti
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
     application_name: 'crm-analytics',
-    // date_trunc по timestamptz (недели/месяцы) считается в часовом поясе бизнеса.
-    options: `-c TimeZone=${timeZone}`,
+  });
+  // date_trunc по timestamptz (недели/месяцы) и границы дат считаются в часовом поясе бизнеса.
+  // Запрос ставится в очередь клиента раньше любого пользовательского, поэтому применяется до него.
+  pool.on('connect', (client) => {
+    client.query("SELECT set_config('TimeZone', $1, false)", [timeZone]).catch((err: unknown) => {
+      logger.error({ err }, 'failed to set session time zone');
+    });
   });
   pool.on('error', (err) => logger.error({ err }, 'idle postgres client error'));
   return pool;

@@ -42,7 +42,17 @@ const EnvSchema = z
 
     DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'must be a postgres:// connection string'),
     DATABASE_POOL_MAX: z.coerce.number().int().min(2).max(50).default(5),
-    APP_TZ: z.string().default('Europe/Moscow'),
+    APP_TZ: z
+      .string()
+      .refine((tz) => {
+        try {
+          new Intl.DateTimeFormat('en', { timeZone: tz });
+          return true;
+        } catch {
+          return false;
+        }
+      }, 'unknown IANA time zone')
+      .default('Europe/Moscow'),
 
     DASHBOARD_TOKEN: z.string().min(8, 'DASHBOARD_TOKEN must be at least 8 characters'),
 

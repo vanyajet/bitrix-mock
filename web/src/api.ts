@@ -11,7 +11,9 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
     // Basic-auth, введённый при открытии страницы, браузер сам отправляет на тот же origin.
-    res = await fetch(path, { credentials: 'same-origin', headers: { accept: 'application/json' }, ...init });
+    // URL строится от origin: если страницу открыли как https://user:pass@host/, относительный путь
+    // унаследовал бы логин/пароль, а fetch запрещает URL с учётными данными.
+    res = await fetch(new URL(path, window.location.origin), { credentials: 'same-origin', headers: { accept: 'application/json' }, ...init });
   } catch {
     throw new ApiError(0, 'Сервер недоступен. Проверьте соединение - на бесплатном хостинге первый запуск после простоя занимает до минуты.');
   }
