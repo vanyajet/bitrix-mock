@@ -4,7 +4,10 @@ import qs from 'qs';
 import { registerDashboardAuth } from './api/auth.js';
 import { registerErrorHandler } from './api/errors.js';
 import { healthRoutes } from './api/health.js';
+import { adsEnabled } from './config/env.js';
 import type { AppContext } from './context.js';
+import { mockAdsRoutes } from './mock/ads.js';
+import { mockBitrixRoutes } from './mock/bitrix-api.js';
 import { registerStatic } from './static.js';
 
 /** Одна строка лога на запрос вместо пары incoming/completed. */
@@ -39,6 +42,15 @@ export async function buildApp(ctx: AppContext): Promise<FastifyInstance> {
   });
   registerErrorHandler(app);
   registerDashboardAuth(app, ctx.env.DASHBOARD_TOKEN);
+
+  const { env, mockStore } = ctx;
+  if (mockStore) {
+    await app.register(mockBitrixRoutes, { prefix: '/mock', store: mockStore, token: env.MOCK_WEBHOOK_TOKEN, rateLimitRps: 2 });
+  }
+  if (adsEnabled(env) && !env.ADS_API_URL) {
+    const clock = mockStore ? () => mockStore.now() : Date.now;
+    await app.register(mockAdsRoutes, { prefix: '/mock/ads', token: env.ADS_API_TOKEN, seed: env.MOCK_SEED, clock });
+  }
 
   await app.register(healthRoutes, { prefix: '/api', ctx });
   await registerStatic(app);

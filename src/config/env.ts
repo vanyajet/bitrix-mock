@@ -62,7 +62,8 @@ const EnvSchema = z
     MOCK_WEBHOOK_TOKEN: z.string().min(6).default('mock-webhook-secret'),
     MOCK_SEED: z.coerce.number().int().default(20_241),
 
-    ADS_ENABLED: bool.default(true),
+    /** По умолчанию включено только в mock-режиме: для реального портала нужен адаптер рекламного API. */
+    ADS_ENABLED: bool.optional(),
     ADS_API_URL: z.url().optional(),
     ADS_API_TOKEN: z.string().default('mock-ads-secret'),
 
@@ -101,6 +102,10 @@ export function bitrixWebhookUrl(env: Env): string {
       ? env.BITRIX_WEBHOOK_URL
       : `http://127.0.0.1:${env.PORT}/mock/rest/1/${env.MOCK_WEBHOOK_TOKEN}/`;
   return url.endsWith('/') ? url : `${url}/`;
+}
+
+export function adsEnabled(env: Env): boolean {
+  return env.ADS_ENABLED ?? env.BITRIX_MODE === 'mock';
 }
 
 export function adsApiUrl(env: Env): string {
